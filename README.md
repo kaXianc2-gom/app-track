@@ -1,7 +1,7 @@
 # AppTrack — 报名进度追踪
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.2.0-brightgreen)](https://github.com/kaXianc2-gom/app-track/releases)
+[![Version](https://img.shields.io/badge/version-1.2.1-brightgreen)](https://github.com/kaXianc2-gom/app-track/releases)
 [![Pages](https://img.shields.io/badge/demo-online-0078D4)](https://kaXianc2-gom.github.io/app-track/)
 
 > 追踪国考/省考报名全流程——时间线、材料清单、截止提醒。数据存浏览器本地。
