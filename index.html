@@ -69,7 +69,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
 .timeline-date{font-size:12px;color:var(--muted);font-weight:600}
 .timeline-title{font-weight:700;font-size:15px}
 .timeline-desc{font-size:13px;color:var(--muted)}
-.timeline-urgent{border-left:3px solid var(--danger);background:#fef2f2}
+.timeline-urgent{border-left:3px solid var(--danger);background:#fef2f2;animation:urgentPulse 2s ease-in-out infinite}
+@keyframes urgentPulse{0%,100%{box-shadow:0 0 0 0 rgba(231,76,60,0.15)}50%{box-shadow:0 0 0 6px rgba(231,76,60,0)}}
 
 /* ── Job Cards ── */
 .job-list{display:flex;flex-direction:column;gap:12px}
