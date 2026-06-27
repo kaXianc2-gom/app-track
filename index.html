@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>AppTrack — 报名进度追踪器</title>
+<style>
+:root {
+  --primary: #0891b2; --primary-dark: #0e7490;
+  --accent: #06b6d4; --accent-light: #ecfeff;
+  --bg: #f8fafc; --card: #ffffff;
+  --border: #e2e8f0; --text: #0f172a; --muted: #64748b;
+  --success: #16a34a; --danger: #dc2626; --warning: #d97706;
+  --radius: 16px; --radius-sm: 10px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-lg: 0 10px 30px rgba(0,0,0,0.08);
+  --transition: 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+[data-theme="dark"] {
+  --primary: #22d3ee; --primary-dark: #06b6d4;
+  --accent: #67e8f9; --accent-light: #083344;
+  --bg: #0b1120; --card: #1e293b;
+  --border: #334155; --text: #f1f5f9; --muted: #94a3b8;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;transition:background var(--transition),color var(--transition)}
+.container{max-width:1100px;margin:0 auto;padding:16px 20px}
+
+.header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:16px 24px;margin-bottom:16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.header-brand{display:flex;align-items:center;gap:10px}
+.header-logo{font-size:32px}
+.header-title{font-size:22px;font-weight:800}
+.header-subtitle{font-size:13px;color:var(--muted)}
+.header-right{display:flex;align-items:center;gap:12px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--accent-light);color:var(--primary-dark);border-radius:20px;font-size:13px;font-weight:600}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;transition:all var(--transition);font-family:inherit}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:var(--primary-dark);transform:translateY(-1px)}
+.btn-outline{background:transparent;color:var(--primary);border:2px solid var(--primary)}
+.btn-outline:hover{background:var(--accent-light)}
+.btn-sm{padding:6px 14px;font-size:13px}
+.btn-danger{background:var(--danger);color:#fff}
+.theme-toggle{width:40px;height:40px;border:2px solid var(--border);border-radius:50%;background:var(--card);cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;transition:all var(--transition)}
+.theme-toggle:hover{border-color:var(--primary);transform:rotate(15deg)}
+
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;margin-bottom:16px;border:1px solid var(--border)}
+
+/* ── Stats ── */
+.stats-bar{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;font-size:14px}
+.stat-item{display:flex;align-items:center;gap:6px;padding:8px 16px;background:var(--card);border-radius:20px;border:1px solid var(--border);font-weight:500;cursor:pointer;transition:all var(--transition)}
+.stat-item:hover{border-color:var(--primary)}
+.stat-item.active{background:var(--accent-light);border-color:var(--primary)}
+.stat-value{font-weight:700;color:var(--primary)}
+.stat-value.warn{color:var(--warning)}
+
+/* ── Timeline ── */
+.timeline{position:relative;padding-left:32px}
+.timeline::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}
+.timeline-item{position:relative;margin-bottom:20px;padding:14px 18px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);transition:all var(--transition)}
+.timeline-item:hover{border-color:var(--primary);box-shadow:var(--shadow-lg)}
+.timeline-dot{position:absolute;left:-24px;top:18px;width:12px;height:12px;border-radius:50%;background:var(--primary);border:2px solid var(--card);z-index:1}
+.timeline-dot.past{background:var(--muted)}
+.timeline-dot.today{background:var(--warning);box-shadow:0 0 0 4px rgba(217,119,6,0.2)}
+.timeline-date{font-size:12px;color:var(--muted);font-weight:600}
+.timeline-title{font-weight:700;font-size:15px}
+.timeline-desc{font-size:13px;color:var(--muted)}
+.timeline-urgent{border-left:3px solid var(--danger);background:#fef2f2}
+
+/* ── Job Cards ── */
+.job-list{display:flex;flex-direction:column;gap:12px}
+.job-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:14px 18px;border:1px solid var(--border);border-radius:var(--radius-sm);transition:all var(--transition);cursor:pointer;background:var(--card)}
+.job-row:hover{border-color:var(--primary)}
+.job-info{display:flex;align-items:center;gap:12px;flex-wrap:wrap;flex:1;min-width:200px}
+.job-dept{font-weight:700;font-size:14px}
+.job-title{font-size:13px;color:var(--muted)}
+.job-meta{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.status-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;white-space:nowrap}
+.st-跟踪中{background:#e0f2fe;color:#0369a1}
+.st-已报名{background:#dbeafe;color:#1d4ed8}
+.st-审核中{background:#fef3c7;color:#92400e}
+.st-已通过{background:#d1fae5;color:#065f46}
+.st-已缴费{background:#ede9fe;color:#5b21b6}
+.st-笔试{background:#fce7f3;color:#9d174d}
+.st-面试{background:#ffedd5;color:#9a3412}
+.st-录取{background:#d1fae5;color:#065f46;font-weight:800}
+.st-未通过{background:#f1f5f9;color:#64748b;text-decoration:line-through}
+
+/* ── Modal ── */
+.modal-overlay{display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.5);align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow-lg);max-width:600px;width:90vw;max-height:85vh;display:flex;flex-direction:column;animation:slideUp .3s ease}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border)}
+.modal-title{font-size:18px;font-weight:700}
+.modal-close{width:36px;height:36px;border:none;background:transparent;font-size:24px;cursor:pointer;border-radius:50%;color:var(--muted);display:flex;align-items:center;justify-content:center}
+.modal-close:hover{background:var(--border)}
+.modal-body{padding:24px;overflow-y:auto;flex:1}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:13px;font-weight:600;margin-bottom:4px;color:var(--muted)}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit;background:var(--card);color:var(--text)}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--primary)}
+.form-row{display:flex;gap:12px}
+.form-row .form-group{flex:1}
+
+/* ── Checklist ── */
+.checklist-item{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:14px}
+.checklist-item input[type="checkbox"]{width:18px;height:18px;accent-color:var(--primary)}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%);z-index:2000;padding:12px 24px;border-radius:24px;font-size:14px;font-weight:600;color:#fff;background:#1e293b;box-shadow:var(--shadow-lg);animation:toastIn .3s ease}
+.toast.success{background:var(--success)}
+.toast.warn{background:var(--warning);color:#1e293b}
+.toast.out{animation:toastOut .3s ease forwards}
+
+/* ── Footer ── */
+.footer{text-align:center;padding:16px;font-size:12px;color:var(--muted);border-top:1px solid var(--border);margin-top:24px}
+
+/* ── Toolbar ── */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.empty-state{text-align:center;padding:64px 24px}
+.empty-icon{font-size:56px;margin-bottom:12px}
+.empty-title{font-size:18px;font-weight:700;margin-bottom:6px}
+.empty-desc{font-size:13px;color:var(--muted);max-width:400px;margin:0 auto}
+
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(16px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes toastOut{from{opacity:1;transform:translateX(-50%) translateY(0)}to{opacity:0;transform:translateX(-50%) translateY(16px)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+@media (max-width:900px){
+  .container{padding:10px 12px}
+  .header{padding:12px 16px}
+  .card{padding:16px}
+  .job-meta{gap:8px}
+  .form-row{flex-direction:column}
+}
+@media (max-width:480px){
+  .header-title{font-size:16px}
+  .header-logo{font-size:24px}
+  .btn{padding:8px 14px;font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+<header class="header">
+  <div class="header-brand">
+    <span class="header-logo">📋</span>
+    <div>
+      <div class="header-title">AppTrack</div>
+      <div class="header-subtitle">报名进度追踪 — 不错过每一个截止日期</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="badge" id="trackBadge">📭 0 个岗位</span>
+    <button class="theme-toggle" id="themeToggle" title="切换主题">🌙</button>
+  </div>
+</header>
+
+<!-- Stats Bar -->
+<div class="stats-bar" id="statsBar">
+  <div class="stat-item active" data-filter="all">📋 全部 <span class="stat-value" id="statAll">0</span></div>
+  <div class="stat-item" data-filter="active">🔄 进行中 <span class="stat-value" id="statActive">0</span></div>
+  <div class="stat-item" data-filter="urgent">⏰ 即将截止 <span class="stat-value warn" id="statUrgent">0</span></div>
+  <div class="stat-item" data-filter="done">✅ 已完成 <span class="stat-value" id="statDone">0</span></div>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <button class="btn btn-primary" id="btnAdd">➕ 添加岗位</button>
+  <button class="btn btn-outline btn-sm" id="btnImport">📥 导入 CSV</button>
+  <button class="btn btn-outline btn-sm" id="btnExport">📤 导出备份</button>
+  <button class="btn btn-outline btn-sm" id="btnImportBackup">📂 恢复备份</button>
+  <input type="file" id="fileInput" accept=".csv,.json" style="display:none">
+</div>
+
+<!-- Timeline View -->
+<div class="card" id="timelineCard">
+  <div style="font-weight:700;font-size:16px;margin-bottom:12px">⏱ 时间线</div>
+  <div id="timelineContent">
+    <div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <div class="empty-title">还没有岗位</div>
+      <div class="empty-desc">点击"添加岗位"开始追踪报名进度，或从 SheetLens CSV 导入</div>
+    </div>
+  </div>
+</div>
+
+<!-- Job Cards -->
+<div class="card" id="jobsCard">
+  <div style="font-weight:700;font-size:16px;margin-bottom:12px">📌 岗位列表</div>
+  <div class="job-list" id="jobList">
+    <div class="empty-state">
+      <div class="empty-icon">📌</div>
+      <div class="empty-title">暂无岗位</div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  ⚡ 数据存储在浏览器本地 &nbsp;|&nbsp; AppTrack v1.0.0 &nbsp;|&nbsp; 定期导出备份防丢失
+</div>
+</div>
+
+<!-- Modal Overlay -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-card">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">添加岗位</span>
+      <button class="modal-close" id="modalClose">×</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script src="https://cdn.bootcdn.net/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+var STATUSES = ['跟踪中', '已报名', '审核中', '已通过', '已缴费', '笔试', '面试', '录取', '未通过'];
+var ACTIVE_STATUSES = ['跟踪中', '已报名', '审核中', '已通过', '已缴费', '笔试', '面试'];
+var DONE_STATUSES = ['录取', '未通过'];
+
+var STATE = {
+  jobs: [],      // [{ id, dept, title, status, dateRegister, dateDeadline, dateExam, dateInterview, notes, checklist: [{text,done}] }]
+  filter: 'all', // all | active | urgent | done
+  editingId: null
+};
+
+// ═══════════════════════════════════════════════
+//  UTILITIES
+// ═══════════════════════════════════════════════
+function formatNum(n) { return (n||0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+function formatDate(d) { if (!d) return ''; var p = d.split('-'); return p[1] + '/' + p[2]; }
+function daysUntil(dateStr) {
+  if (!dateStr) return Infinity;
+  var d = new Date(dateStr + 'T00:00:00');
+  return Math.ceil((d - new Date()) / (1000 * 60 * 60 * 24));
+}
+
+function toast(msg, type) {
+  var el = document.createElement('div');
+  el.className = 'toast' + (type ? ' ' + type : '');
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(function() { el.classList.add('out'); setTimeout(function() { if(el.parentNode)el.parentNode.removeChild(el); }, 300); }, 2000);
+}
+
+function toggleTheme() {
+  var cur = document.documentElement.getAttribute('data-theme');
+  var next = cur === 'dark' ? '' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  document.getElementById('themeToggle').textContent = next ? '☀️' : '🌙';
+  saveData();
+}
+
+function genId() { return 'j_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8); }
+
+// ═══════════════════════════════════════════════
+//  DATA PERSISTENCE
+// ═══════════════════════════════════════════════
+function saveData() {
+  try {
+    localStorage.setItem('apptrack_jobs', JSON.stringify(STATE.jobs));
+    localStorage.setItem('apptrack_theme', document.documentElement.getAttribute('data-theme') || 'light');
+  } catch(e) {}
+}
+
+function loadData() {
+  try {
+    var d = localStorage.getItem('apptrack_jobs');
+    if (d) STATE.jobs = JSON.parse(d);
+    // Migration: ensure checklist field exists
+    STATE.jobs.forEach(function(j) { if (!j.checklist) j.checklist = []; });
+  } catch(e) { STATE.jobs = []; }
+}
+
+function exportBackup() {
+  var blob = new Blob([JSON.stringify(STATE.jobs, null, 2)], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = 'AppTrack_备份_' + new Date().toISOString().slice(0, 10) + '.json';
+  a.click(); URL.revokeObjectURL(url);
+  toast('📤 已导出备份 (' + STATE.jobs.length + ' 个岗位)', 'success');
+}
+
+function importBackup(file) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = JSON.parse(e.target.result);
+      if (!Array.isArray(data)) throw new Error('格式错误');
+      STATE.jobs = data;
+      saveData();
+      renderAll();
+      toast('📂 已恢复 ' + data.length + ' 个岗位', 'success');
+    } catch(err) { toast('⚠️ 备份文件格式错误', 'warn'); }
+  };
+  reader.readAsText(file);
+}
+
+// ═══════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════
+function renderAll() {
+  renderStats();
+  renderTimeline();
+  renderJobList();
+  document.getElementById('trackBadge').textContent = '📋 ' + STATE.jobs.length + ' 个岗位';
+}
+
+function renderStats() {
+  var filtered = getFilteredJobs();
+  var active = STATE.jobs.filter(function(j) { return ACTIVE_STATUSES.indexOf(j.status) !== -1; });
+  var urgent = getUrgentJobs();
+  var done = STATE.jobs.filter(function(j) { return DONE_STATUSES.indexOf(j.status) !== -1; });
+
+  document.getElementById('statAll').textContent = STATE.jobs.length;
+  document.getElementById('statActive').textContent = active.length;
+  document.getElementById('statUrgent').textContent = urgent.length;
+  document.getElementById('statDone').textContent = done.length;
+
+  document.querySelectorAll('.stat-item').forEach(function(el) {
+    el.classList.toggle('active', el.getAttribute('data-filter') === STATE.filter);
+  });
+}
+
+function getFilteredJobs() {
+  if (STATE.filter === 'active') return STATE.jobs.filter(function(j) { return ACTIVE_STATUSES.indexOf(j.status) !== -1; });
+  if (STATE.filter === 'urgent') return getUrgentJobs();
+  if (STATE.filter === 'done') return STATE.jobs.filter(function(j) { return DONE_STATUSES.indexOf(j.status) !== -1; });
+  return STATE.jobs;
+}
+
+function getUrgentJobs() {
+  var today = new Date(); today.setHours(0,0,0,0);
+  var weekLater = new Date(today); weekLater.setDate(weekLater.getDate() + 7);
+  return STATE.jobs.filter(function(j) {
+    if (DONE_STATUSES.indexOf(j.status) !== -1) return false;
+    var dl = j.dateDeadline;
+    if (!dl) return false;
+    var d = new Date(dl + 'T00:00:00');
+    return d >= today && d <= weekLater;
+  });
+}
+
+function renderTimeline() {
+  var jobs = STATE.jobs;
+  if (!jobs.length) {
+    document.getElementById('timelineContent').innerHTML = '<div class="empty-state"><div class="empty-icon">⏱</div><div class="empty-title">暂无时间线</div><div class="empty-desc">添加岗位后自动生成时间线</div></div>';
+    return;
+  }
+
+  // Collect all timeline events
+  var events = [];
+  jobs.forEach(function(j) {
+    var label = (j.dept || '岗位') + ' — ' + (j.title || '未知职位');
+    if (j.dateRegister) events.push({ date: j.dateRegister, label: '📝 报名 — ' + label, job: j, type: 'register' });
+    if (j.dateDeadline) events.push({ date: j.dateDeadline, label: '⏰ 截止 — ' + label, job: j, type: 'deadline' });
+    if (j.dateExam) events.push({ date: j.dateExam, label: '📖 笔试 — ' + label, job: j, type: 'exam' });
+    if (j.dateInterview) events.push({ date: j.dateInterview, label: '🎤 面试 — ' + label, job: j, type: 'interview' });
+  });
+
+  events.sort(function(a, b) { return a.date.localeCompare(b.date); });
+
+  // Remove past events older than 30 days
+  var cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
+  var cutoffStr = cutoff.toISOString().slice(0, 10);
+  events = events.filter(function(e) { return e.date >= cutoffStr || daysUntil(e.date) > -30; });
+
+  var html = '<div class="timeline">';
+  events.forEach(function(evt) {
+    var days = daysUntil(evt.date);
+    var dotCls = days < 0 ? 'past' : days === 0 ? 'today' : '';
+    var itemCls = days >= 0 && days <= 3 ? 'timeline-urgent' : '';
+    var daysText = days < 0 ? Math.abs(days) + '天前' : days === 0 ? '今天' : days + '天后';
+    html += '<div class="timeline-item ' + itemCls + '">';
+    html += '<div class="timeline-dot ' + dotCls + '"></div>';
+    html += '<div class="timeline-date">' + evt.date + ' · ' + daysText + '</div>';
+    html += '<div class="timeline-title">' + escHtml(evt.label) + '</div>';
+    html += '<div class="timeline-desc">状态：' + evt.job.status + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  document.getElementById('timelineContent').innerHTML = html;
+}
+
+function renderJobList() {
+  var jobs = getFilteredJobs();
+  var listEl = document.getElementById('jobList');
+  if (!jobs.length) {
+    listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">📌</div><div class="empty-title">' + (STATE.jobs.length ? '无匹配岗位' : '暂无岗位') + '</div></div>';
+    return;
+  }
+
+  var html = '';
+  jobs.forEach(function(j) {
+    html += '<div class="job-row" onclick="editJob(\'' + j.id + '\')">';
+    html += '<div class="job-info">';
+    html += '<span class="job-dept">' + escHtml(j.dept || '未命名部门') + '</span>';
+    html += '<span class="job-title">' + escHtml(j.title || '') + '</span>';
+    html += '<span class="status-badge st-' + j.status + '">' + j.status + '</span>';
+    html += '</div>';
+    html += '<div class="job-meta">';
+    if (j.dateRegister) html += '<span style="font-size:12px;color:var(--muted)">📝 ' + formatDate(j.dateRegister) + '</span>';
+    if (j.dateDeadline) {
+      var d = daysUntil(j.dateDeadline);
+      var ds = d < 0 ? '已截止' : d === 0 ? '今天截止!' : d + '天后截止';
+      var dc = d <= 3 && d >= 0 ? 'color:var(--danger);font-weight:700' : 'color:var(--muted)';
+      html += '<span style="font-size:12px;' + dc + '">⏰ ' + formatDate(j.dateDeadline) + ' · ' + ds + '</span>';
+    }
+    if (j.dateExam) html += '<span style="font-size:12px;color:var(--muted)">📖 笔试 ' + formatDate(j.dateExam) + '</span>';
+    html += '<button class="btn btn-sm" style="background:none;border:none;cursor:pointer;padding:2px 6px" onclick="event.stopPropagation();deleteJob(\'' + j.id + '\')">🗑</button>';
+    html += '</div>';
+    html += '</div>';
+  });
+  listEl.innerHTML = html;
+}
+
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ═══════════════════════════════════════════════
+//  MODAL: ADD / EDIT JOB
+// ═══════════════════════════════════════════════
+function openJobModal(job) {
+  var isEdit = !!job;
+  STATE.editingId = isEdit ? job.id : null;
+
+  document.getElementById('modalTitle').textContent = isEdit ? '编辑岗位' : '添加岗位';
+
+  var dept = job ? job.dept : '';
+  var title = job ? job.title : '';
+  var status = job ? job.status : '跟踪中';
+  var dateRegister = job ? (job.dateRegister || '') : '';
+  var dateDeadline = job ? (job.dateDeadline || '') : '';
+  var dateExam = job ? (job.dateExam || '') : '';
+  var dateInterview = job ? (job.dateInterview || '') : '';
+  var notes = job ? (job.notes || '') : '';
+  var checklist = job ? (job.checklist || []) : [];
+
+  var html = '';
+  html += '<div class="form-row"><div class="form-group"><label>部门名称 *</label><input type="text" id="fDept" value="' + escAttr(dept) + '" placeholder="如：国家税务总局"></div>';
+  html += '<div class="form-group"><label>职位名称</label><input type="text" id="fTitle" value="' + escAttr(title) + '" placeholder="如：一级行政执法员"></div></div>';
+
+  html += '<div class="form-row"><div class="form-group"><label>状态</label><select id="fStatus">';
+  STATUSES.forEach(function(s) {
+    html += '<option' + (status === s ? ' selected' : '') + '>' + s + '</option>';
+  });
+  html += '</select></div></div>';
+
+  html += '<div class="form-row"><div class="form-group"><label>报名日期</label><input type="date" id="fRegister" value="' + dateRegister + '"></div>';
+  html += '<div class="form-group"><label>报名截止</label><input type="date" id="fDeadline" value="' + dateDeadline + '"></div></div>';
+  html += '<div class="form-row"><div class="form-group"><label>笔试日期</label><input type="date" id="fExam" value="' + dateExam + '"></div>';
+  html += '<div class="form-group"><label>面试日期</label><input type="date" id="fInterview" value="' + dateInterview + '"></div></div>';
+
+  html += '<div class="form-group"><label>备注</label><textarea id="fNotes" rows="3" placeholder="如：准备材料清单、注意事项">' + escHtml(notes) + '</textarea></div>';
+
+  // Checklist
+  html += '<div style="font-weight:600;font-size:13px;margin-bottom:8px">📎 材料清单</div>';
+  html += '<div id="checklistContainer">';
+  checklist.forEach(function(item, idx) {
+    html += '<div class="checklist-item"><input type="checkbox" ' + (item.done ? 'checked' : '') + ' data-cidx="' + idx + '"><input type="text" value="' + escAttr(item.text) + '" data-cidx="' + idx + '" placeholder="如：身份证复印件" style="flex:1;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:13px;font-family:inherit;background:var(--card);color:var(--text)"><button class="btn btn-sm" onclick="removeChecklistItem(this)" style="padding:2px 6px;background:none;border:none;cursor:pointer;color:var(--danger)">✕</button></div>';
+  });
+  html += '</div>';
+  html += '<button class="btn btn-outline btn-sm" onclick="addChecklistItem()" style="margin-top:4px">➕ 添加材料</button>';
+
+  html += '<div style="margin-top:20px;display:flex;gap:8px;justify-content:flex-end">';
+  html += '<button class="btn btn-outline" onclick="closeModal()">取消</button>';
+  html += '<button class="btn btn-primary" id="btnSave">' + (isEdit ? '保存修改' : '添加岗位') + '</button>';
+  html += '</div>';
+
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('modalOverlay').classList.add('open');
+
+  document.getElementById('btnSave').addEventListener('click', saveJob);
+}
+
+function escapeAttr(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+
+function addChecklistItem() {
+  var container = document.getElementById('checklistContainer');
+  var idx = container.children.length;
+  var div = document.createElement('div');
+  div.className = 'checklist-item';
+  div.innerHTML = '<input type="checkbox" data-cidx="' + idx + '"><input type="text" data-cidx="' + idx + '" placeholder="如：身份证复印件" style="flex:1;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:13px;font-family:inherit;background:var(--card);color:var(--text)"><button class="btn btn-sm" onclick="removeChecklistItem(this)" style="padding:2px 6px;background:none;border:none;cursor:pointer;color:var(--danger)">✕</button>';
+  container.appendChild(div);
+}
+
+function removeChecklistItem(btn) { btn.parentElement.remove(); }
+
+function saveJob() {
+  var dept = document.getElementById('fDept').value.trim();
+  if (!dept) { toast('⚠️ 请输入部门名称', 'warn'); return; }
+
+  var checklist = [];
+  document.querySelectorAll('#checklistContainer .checklist-item').forEach(function(item) {
+    var cb = item.querySelector('input[type="checkbox"]');
+    var ti = item.querySelector('input[type="text"]');
+    if (ti && ti.value.trim()) {
+      checklist.push({ text: ti.value.trim(), done: cb ? cb.checked : false });
+    }
+  });
+
+  var jobData = {
+    id: STATE.editingId || genId(),
+    dept: dept,
+    title: document.getElementById('fTitle').value.trim(),
+    status: document.getElementById('fStatus').value,
+    dateRegister: document.getElementById('fRegister').value,
+    dateDeadline: document.getElementById('fDeadline').value,
+    dateExam: document.getElementById('fExam').value,
+    dateInterview: document.getElementById('fInterview').value,
+    notes: document.getElementById('fNotes').value.trim(),
+    checklist: checklist
+  };
+
+  if (STATE.editingId) {
+    var idx = STATE.jobs.findIndex(function(j) { return j.id === STATE.editingId; });
+    if (idx >= 0) STATE.jobs[idx] = jobData;
+    toast('✅ 已更新', 'success');
+  } else {
+    STATE.jobs.push(jobData);
+    toast('✅ 已添加', 'success');
+  }
+
+  STATE.editingId = null;
+  closeModal();
+  saveData();
+  renderAll();
+}
+
+function editJob(id) {
+  var job = STATE.jobs.find(function(j) { return j.id === id; });
+  if (job) openJobModal(job);
+}
+
+function deleteJob(id) {
+  if (!confirm('确定删除这个岗位吗？')) return;
+  STATE.jobs = STATE.jobs.filter(function(j) { return j.id !== id; });
+  saveData();
+  renderAll();
+  toast('🗑 已删除', 'success');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  STATE.editingId = null;
+}
+
+// ═══════════════════════════════════════════════
+//  CSV IMPORT (from SheetLens)
+// ═══════════════════════════════════════════════
+function importCSV(file) {
+  if (typeof XLSX === 'undefined') { toast('⚠️ 库未加载', 'warn'); return; }
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var text = e.target.result;
+    var lines = text.split(/\r?\n/).filter(function(l) { return l.trim(); });
+    if (lines.length < 2) { toast('⚠️ CSV 数据不足', 'warn'); return; }
+
+    var headers = parseCSVLine(lines[0]);
+    var deptIdx = headers.indexOf('部门名称'), titleIdx = headers.indexOf('职位名称');
+    var locIdx = -1;
+    for (var i = 0; i < headers.length; i++) { if (headers[i].indexOf('省份') !== -1) locIdx = i; }
+
+    var imported = 0;
+    for (var r = 1; r < lines.length; r++) {
+      var vals = parseCSVLine(lines[r]);
+      var dept = deptIdx >= 0 ? (vals[deptIdx] || '') : '';
+      var title = titleIdx >= 0 ? (vals[titleIdx] || '') : '';
+      if (!dept && !title) continue;
+      STATE.jobs.push({
+        id: genId(), dept: dept, title: title,
+        status: '跟踪中', dateRegister: '', dateDeadline: '', dateExam: '', dateInterview: '',
+        notes: '', checklist: []
+      });
+      imported++;
+    }
+    saveData();
+    renderAll();
+    toast('📥 已导入 ' + imported + ' 个岗位', 'success');
+  };
+  reader.readAsText(file);
+}
+
+function parseCSVLine(line) {
+  var result = [];
+  var current = '';
+  var inQuotes = false;
+  for (var i = 0; i < line.length; i++) {
+    var ch = line[i];
+    if (ch === '"') { inQuotes = !inQuotes; }
+    else if (ch === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
+    else { current += ch; }
+  }
+  result.push(current.trim());
+  return result;
+}
+
+// ═══════════════════════════════════════════════
+//  DEADLINE CHECK ON LOAD
+// ═══════════════════════════════════════════════
+function checkDeadlines() {
+  var urgent = getUrgentJobs();
+  if (urgent.length) {
+    var names = urgent.map(function(j) { return j.dept; }).join('、');
+    toast('⏰ ' + urgent.length + ' 个岗位即将截止：' + names, 'warn');
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+function init() {
+  loadData();
+  renderAll();
+  setTimeout(checkDeadlines, 500);
+
+  // Theme
+  try {
+    var tm = localStorage.getItem('apptrack_theme');
+    if (tm === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  } catch(e) {}
+  document.getElementById('themeToggle').textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+  document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+
+  // Buttons
+  document.getElementById('btnAdd').addEventListener('click', function() { openJobModal(null); });
+  document.getElementById('btnExport').addEventListener('click', exportBackup);
+  document.getElementById('btnImport').addEventListener('click', function() {
+    document.getElementById('fileInput').accept = '.csv';
+    document.getElementById('fileInput').click();
+  });
+  document.getElementById('btnImportBackup').addEventListener('click', function() {
+    document.getElementById('fileInput').accept = '.json';
+    document.getElementById('fileInput').click();
+  });
+  document.getElementById('fileInput').addEventListener('change', function() {
+    if (!this.files.length) return;
+    var f = this.files[0];
+    if (f.name.endsWith('.json')) { importBackup(f); }
+    else { importCSV(f); }
+    this.value = '';
+  });
+
+  // Stats filter
+  document.querySelectorAll('.stat-item').forEach(function(el) {
+    el.addEventListener('click', function() {
+      STATE.filter = this.getAttribute('data-filter');
+      renderAll();
+    });
+  });
+
+  // Modal
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+  document.getElementById('modalOverlay').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
+
+  // Test mode
+  if (window.location.search.indexOf('test=1') !== -1) setTimeout(runTests, 300);
+}
+
+// ═══════════════════════════════════════════════
+//  EMBEDDED TESTS
+// ═══════════════════════════════════════════════
+function runTests() {
+  var results = [];
+  function t(name, fn) {
+    try { results.push({ name: name, pass: !!fn() }); }
+    catch(e) { results.push({ name: name, pass: false, error: e.message }); }
+  }
+
+  t('STATE exists', function() { return typeof STATE !== 'undefined'; });
+  t('daysUntil future', function() { return daysUntil('2099-12-31') > 0; });
+  t('daysUntil past', function() { return daysUntil('2020-01-01') < 0; });
+  t('formatNum', function() { return formatNum(12345) === '12,345'; });
+  t('genId unique', function() { var a = genId(), b = genId(); return a !== b; });
+  t('saveData/loadData cycle', function() {
+    var orig = STATE.jobs.slice();
+    STATE.jobs = [{ id: 'test', dept: '测试', title: '', status: '跟踪中', notes: '', checklist: [] }];
+    saveData();
+    loadData();
+    var ok = STATE.jobs.length === 1 && STATE.jobs[0].dept === '测试';
+    STATE.jobs = orig;
+    saveData();
+    return ok;
+  });
+  t('getUrgentJobs empty', function() { return Array.isArray(getUrgentJobs()); });
+  t('formatDate', function() { return formatDate('2026-03-15') === '3/15'; });
+  t('STATUSES has 9 statuses', function() { return STATUSES.length === 9; });
+
+  // Output
+  var passed = results.filter(function(r) { return r.pass; }).length;
+  var total = results.length;
+  var color = passed === total ? 'green' : 'orange';
+  console.log('%c📋 AppTrack Tests: ' + passed + '/' + total + ' passed', 'font-size:16px;font-weight:bold;color:' + color);
+  results.forEach(function(r) { console.log(r.pass ? '  ✅' : '  ❌', r.name, r.error ? '(' + r.error + ')' : ''); });
+  if (passed < total) console.warn('⚠ ' + (total - passed) + ' tests failed');
+  else console.log('✅ All tests passed!');
+}
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+</script>
+</body>
+</html>
